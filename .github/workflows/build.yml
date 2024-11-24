@@ -48,12 +48,12 @@ jobs:
       - name: Build binary
         uses: houseabsolute/actions-rust-cross@v0
         with:
-          # command: ${{ matrix.platform.command }}
+          command: both
           target: ${{ matrix.platform.target }}
-          # args: "--locked --release"
+          args: "--locked --release"
           # strip: true
-      # - name: Publish artifacts and release
-      #   uses: houseabsolute/actions-rust-release@v0
-      #   with:
-      #     executable-name: ubi
-      #     target: ${{ matrix.platform.target }}
+      - name: Publish artifacts and release
+        uses: houseabsolute/actions-rust-release@v0
+        with:
+          executable-name: geode
+          target: ${{ matrix.platform.target }}
