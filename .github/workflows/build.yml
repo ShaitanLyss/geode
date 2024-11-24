@@ -1,5 +1,4 @@
-
-name: Rust CI
+name: Cross compile Rust
 
 on:
   push:
