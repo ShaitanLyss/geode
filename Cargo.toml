@@ -1,0 +1,13 @@
+[package]
+name = "geode"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+strict-yaml-rust = "0.1.2"
+uom = {version = "0.36.0", features = ["f64", "si", "std"], default-features = false}
+serde = { version = "1.0", features = ["derive"] }
+regex = "1.11.1"
+lazy_static = "1.5.0"
+serde_yaml = "0.9.34"
+
