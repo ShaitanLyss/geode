@@ -50,7 +50,7 @@ jobs:
       - name: Install latest nightly
         uses: actions-rs/toolchain@v1
         with:
-            toolchain: nightly-2024-11-24
+            toolchain: 1.85.0-nightly
             override: true
       - uses: Swatinem/rust-cache@v2
       - name: Build binary
