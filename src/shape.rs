@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::parse::{quantity::Length, range::Range};
+use crate::math::Vec3;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Cuboid {
@@ -8,6 +9,13 @@ pub struct Cuboid {
     y: Range<Length>,
     z: Range<Length>
 }
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct Sphere {
+    center: Vec3, 
+    radius: Length 
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

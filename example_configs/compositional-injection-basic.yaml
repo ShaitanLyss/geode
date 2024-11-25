@@ -52,9 +52,9 @@ materials:
     porosity: reference 0.3
     pressure: reference 5 000 000
     permeability:
-      xx: 9.869e-14
-      yy: 9.869e-14
-      zz: 9.869e-14
+      xx: 100
+      yy: 0.1 D
+      zz: 9.869e-14 m²
   fluid:
 
 conditions:

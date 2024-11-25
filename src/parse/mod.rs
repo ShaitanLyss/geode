@@ -1,8 +1,15 @@
 pub mod quantity;
-pub mod error;
 pub mod range;
+pub mod reference;
+
+pub use reference::*;
 
 
-trait RawRepr {
+pub trait RawRepr {
    fn raw(&self) -> &str;
 }
+
+use crate::math::DiagonalTensor;
+
+
+pub type PermeabilityDiagonalTensor = DiagonalTensor<quantity::HydraulicPermeability>;

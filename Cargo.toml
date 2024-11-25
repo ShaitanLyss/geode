@@ -1,11 +1,13 @@
+cargo-features = ["edition2024"]
+
 [package]
 name = "geode"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 strict-yaml-rust = "0.1.2"
-uom = {version = "0.36.0", features = ["f64", "si", "std"], default-features = false}
+uom = {git = "https://github.com/ShaitanLyss/uom.git", version = "0.37.0", features = ["f64", "si", "std"], default-features = false}
 serde = { version = "1.0", features = ["derive"] }
 regex = "1.11.1"
 lazy_static = "1.5.0"
@@ -16,7 +18,4 @@ serde_json = "1.0.133"
 
 [[bin]]
 name = "test_parser"
-test = false
-
-[doc]
 test = false

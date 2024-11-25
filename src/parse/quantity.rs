@@ -1,16 +1,23 @@
 #![allow(unused)]
-use super::error::ParseError;
 use super::RawRepr;
+use crate::StdError;
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{de::Error, Deserialize, Serialize};
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 use std::str::FromStr;
+use thiserror::Error;
 
 #[derive(Debug, PartialEq, PartialOrd, Clone)]
 pub struct ParsedValue<L> {
     raw: String,
     parsed: L,
+}
+
+impl<T> Display for ParsedValue<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.raw)
+    }
 }
 
 impl<L> RawRepr for ParsedValue<L> {
@@ -19,19 +26,29 @@ impl<L> RawRepr for ParsedValue<L> {
     }
 }
 
+#[derive(Debug, Error)]
+pub enum ParseQuantityError<E: StdError> {
+    #[error("invalid quantity format : '{0}', should be 'value [unit]'")]
+    InvalidFormat(String),
+    #[error("quantity not recognized: '{0}'")]
+    Unrecognized(#[from] E),
+    #[error("this quantity can't be a reference, please remove the 'ref' or 'reference' keyword")]
+    NoReference,
+}
+
 impl<T> FromStr for ParsedValue<T>
 where
     T: FromStr + DefaultUnit + Debug,
-    T::Err: std::error::Error,
+    T::Err: StdError,
 {
-    type Err = ParseError<T>;
+    type Err = ParseQuantityError<T::Err>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(ParsedValue::new(s)?)
     }
 }
 
-impl<L> Serialize for ParsedValue<L> {
+impl<T> Serialize for ParsedValue<T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -41,67 +58,58 @@ impl<L> Serialize for ParsedValue<L> {
     }
 }
 
-impl<'de, L> Deserialize<'de> for ParsedValue<L>
+impl<'de, T> Deserialize<'de> for ParsedValue<T>
 where
-    L: FromStr + Debug + DefaultUnit,
+    T: FromStr + Debug + DefaultUnit,
+    T::Err: StdError,
 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
         // First, deserialize the `raw` field as a string
-        let raw: String = Deserialize::deserialize(deserializer)?;
-
-        // Then attempt to parse it into L
-        let parsed: L = raw
-            .parse()
-            .map_err(|_| D::Error::custom(format!("Failed to parse '{}'", raw)))?;
-
-        // Return the new ParsedValue instance
-        Ok(ParsedValue { raw, parsed })
+        let raw: &str = Deserialize::deserialize(deserializer)?;
+        Ok(ParsedValue::new(raw).map_err(|e| D::Error::custom(e))?)
     }
 }
 
 lazy_static! {
-    static ref HAS_UNIT_RE: Regex = Regex::new(
-        r"^(reference )?([+-]?[\d. _]+(?:e(?:\+|-)?[\d]+)?)[ \t]*([-°a-zA-Z][-+/\w]*)?$"
-    )
-    .unwrap();
+    static ref HAS_UNIT_RE: Regex =
+        Regex::new(r"(?i)^\s*(reference|ref)?\s*([+-]?[\d. _]+(?:e(?:\+|-)?[\d]+)?)[ \t]*([-°a-zA-Z][-+/\w²]*)?$").unwrap();
 }
 
-impl<L> ParsedValue<L>
+impl<T> ParsedValue<T>
 where
-    L: FromStr + Debug + DefaultUnit,
-    <L as FromStr>::Err: Debug,
+    T: FromStr + Debug + DefaultUnit,
+    T::Err: Debug + StdError,
 {
     // Constructor to create a new ParsedValue
-    pub fn new(raw: &str) -> Result<Self, ParseError<L>> {
+    pub fn new(raw: &str) -> Result<Self, ParseQuantityError<T::Err>> {
         if let Some(captures) = HAS_UNIT_RE.captures(raw) {
-            let _is_reference = captures.get(1).is_some();
+            if captures.get(1).is_some() {
+                return Err(ParseQuantityError::NoReference);
+            }
             let prepped_raw = format!(
                 "{} {}",
                 captures[2].to_string().replace(" ", "").replace("_", ""),
                 if let Some(unit) = captures.get(3) {
                     unit.as_str()
                 } else {
-                    L::DEFAULT_UNIT
+                    T::DEFAULT_UNIT
                 }
             );
-            // Parse the string into L, or handle failure
-            let parsed = prepped_raw
-                .parse::<L>()
-                .map_err(|e| ParseError::UnrecognizedQuantity(e))?;
+
             Ok(ParsedValue {
                 raw: raw.to_string(),
-                parsed,
+                parsed: prepped_raw.parse()?,
             })
         } else {
-            Err(ParseError::InvalidQuantityFormat(raw.to_string()))
+            Err(ParseQuantityError::InvalidFormat(raw.to_string()))
         }
     }
 
     /// Getter for the parsed quantity
-    pub fn parsed(&self) -> &L {
+    pub fn parsed(&self) -> &T {
         &self.parsed
     }
 
@@ -117,11 +125,27 @@ pub trait DefaultUnit {
     const DEFAULT_UNIT: &str;
 }
 
+
+/// Ratio (unit less value resulting from calculating the ratio of two quantities)
+pub type Ratio = ParsedValue<si::Ratio>;
+
+impl DefaultUnit for si::Ratio {
+    const DEFAULT_UNIT: &str = "";
+}
+
 /// Length (default: kilometers, since distances in geoscience are often measured in km)
 pub type Length = ParsedValue<si::Length>;
 
 impl DefaultUnit for si::Length {
     const DEFAULT_UNIT: &str = "km";
+}
+
+
+/// HydraulicPermeability (default: darcy)
+pub type HydraulicPermeability = ParsedValue<si::HydraulicPermeability>;
+
+impl DefaultUnit for si::HydraulicPermeability {
+    const DEFAULT_UNIT: &str = "mD";
 }
 
 /// Mass (default: grams, since small mass quantities in geoscience, especially in analysis, use grams)
@@ -169,7 +193,7 @@ impl DefaultUnit for si::MolarMass {
 mod tests {
     use std::str::FromStr;
 
-    use super::{DefaultUnit, ParsedValue};
+    use super::{DefaultUnit, ParsedValue, Pressure};
     use std::fmt::Debug;
     use uom::si::{f64::Length, length::*};
 
@@ -233,5 +257,11 @@ mod tests {
         attempt_length_parse(""); // Empty string
                                   //attempt_length_parse("10 10 m"); // Invalid format
         attempt_length_parse("reference m"); // Missing number
+    }
+
+    #[test]
+    fn parse_reference_should_err() {
+        let raw = "reference 5 000 000";
+        assert!(raw.parse::<Pressure>().is_err());
     }
 }

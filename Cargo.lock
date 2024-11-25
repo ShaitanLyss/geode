@@ -358,9 +358,8 @@ checksum = "673aac59facbab8a9007c7f6108d11f63b603f7cabff99fabf650fea5c32b861"
 
 [[package]]
 name = "uom"
-version = "0.36.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ffd36e5350a65d112584053ee91843955826bf9e56ec0d1351214e01f6d7cd9c"
+version = "0.37.0"
+source = "git+https://github.com/ShaitanLyss/uom.git#56a7b0cf9f7862d011134d3c3eae8ec4a4852fdb"
 dependencies = [
  "num-traits",
  "typenum",
