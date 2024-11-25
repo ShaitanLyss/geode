@@ -9,11 +9,10 @@ pub mod material;
 
 use std::{collections::HashMap, str::FromStr};
 
+use self::domain::Domain;
 use compositional::CompositionalPhysics;
 use material::Material;
 use serde::{Deserialize, Serialize};
-use self::domain::Domain;
-
 
 mod compositional {
     use crate::parse::quantity::*;
@@ -37,7 +36,7 @@ mod compositional {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Physics {
-    compositional: CompositionalPhysics
+    compositional: CompositionalPhysics,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -66,4 +65,3 @@ impl GeoscienceModel {
         Ok(serde_yaml::from_str(s)?)
     }
 }
-
