@@ -1,35 +1,46 @@
-extern crate strict_yaml_rust;
-extern crate uom;
+#![allow(unused)]
 
-mod model;
-mod parse;
-
+use clap::command;
+use clap::Parser;
+use strict_yaml_rust::StrictYamlEmitter;
 use strict_yaml_rust::StrictYamlLoader;
 use std::error::Error;
 
 use std::env;
 use std::fs;
 use std::io::{self, Write};
+use std::path::PathBuf;
+
+
+/// A human first geoscience configuration format, for generating input decks for various simulation
+/// frameworks.
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Geode config file to read
+    #[arg(short, long)]
+    config_file: PathBuf
+}
+
 
 fn main() -> Result<(), Box<dyn Error>> {
-    // Get the command line arguments
-    let args: Vec<String> = env::args().collect();
+    let args = Args::parse();
+    dbg!(args.config_file.to_str());
 
-    // Check if a file path was provided
-    if args.len() < 2 {
-        writeln!(io::stderr(), "Usage: {} <file_path>", args[0])?;
-        std::process::exit(1);
-    }
 
-    // Get the file path from the arguments
-    let file_path = &args[1];
 
-    // Read the file content
-    let content = fs::read_to_string(file_path)?;
-
-    // Print the content to the standard output
-    //println!("{}", content);
-    dbg!(StrictYamlLoader::load_from_str(&content)?);
+    //// Read the file content
+    //let content = fs::read_to_string(file_path)?;
+    //
+    //// Print the content to the standard output
+    ////println!("{}", content);
+    //let parsed = dbg!(StrictYamlLoader::load_from_str(&content)?);
+    //let doc = &parsed[0];
+    //let mut out_str = String::new();
+    //
+    //let mut emitter = StrictYamlEmitter::new(&mut out_str);
+    //dbg!(emitter.dump(doc).unwrap());
+    //dbg!(out_str);
 
     Ok(())
 }

@@ -1,14 +1,21 @@
-use geode::parse::quantity;
+#![allow(unused)]
+use geode::{parse::{quantity::{self, Mass}, range::Range}, shape::Cuboid};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Test {
-    x: quantity::Length,
+    cuboid: Cuboid
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let length_value = quantity::Length::new("1 000 m")?;
     dbg!(&length_value);
+
+    dbg!("0 .. 4".parse::<Range<f64>>()?);
+
+    dbg!("1 kg .. -5 g".parse::<Range<Mass>>()?);
+
+    let test: Test = dbg!(serde_yaml::from_str("cuboid:\n x: 0..1\n y: 1..2\n z: 0..-1")?);
 
     //// Print the parsed value to ensure it's working correctly
     //println!("Parsed value: {:?}", length_value.parsed());

@@ -1,5 +1,6 @@
 #![allow(unused)]
 use super::error::ParseError;
+use super::RawRepr;
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{de::Error, Deserialize, Serialize};
@@ -7,18 +8,30 @@ use std::fmt::Debug;
 use std::str::FromStr;
 
 #[derive(Debug, PartialEq, PartialOrd, Clone)]
-pub struct ParsedValue<L>
-where
-    L: FromStr + Debug + DefaultUnit,
-{
+pub struct ParsedValue<L> {
     raw: String,
     parsed: L,
 }
 
-impl<L> Serialize for ParsedValue<L>
+impl<L> RawRepr for ParsedValue<L> {
+    fn raw(&self) -> &str {
+        &self.raw
+    }
+}
+
+impl<T> FromStr for ParsedValue<T>
 where
-    L: FromStr + Debug + DefaultUnit,
+    T: FromStr + DefaultUnit + Debug,
+    T::Err: std::error::Error,
 {
+    type Err = ParseError<T>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(ParsedValue::new(s)?)
+    }
+}
+
+impl<L> Serialize for ParsedValue<L> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -50,9 +63,10 @@ where
 }
 
 lazy_static! {
-    static ref HAS_UNIT_RE: Regex =
-        Regex::new(r"^(reference )?([\d. _]+(?:e(?:\+|-)?[\d]+)?)[ \t]*([-°a-zA-Z][-+/\w]*)?$")
-            .unwrap();
+    static ref HAS_UNIT_RE: Regex = Regex::new(
+        r"^(reference )?([+-]?[\d. _]+(?:e(?:\+|-)?[\d]+)?)[ \t]*([-°a-zA-Z][-+/\w]*)?$"
+    )
+    .unwrap();
 }
 
 impl<L> ParsedValue<L>
@@ -157,7 +171,7 @@ mod tests {
 
     use super::{DefaultUnit, ParsedValue};
     use std::fmt::Debug;
-    use uom::si::length::*;
+    use uom::si::{f64::Length, length::*};
 
     fn make_parsed<L>(raw: &str, parsed: L) -> ParsedValue<L>
     where
@@ -168,8 +182,6 @@ mod tests {
             parsed,
         }
     }
-
-
 
     #[test]
     fn parse_length_with_valid_input() {
@@ -204,6 +216,10 @@ mod tests {
             make_length("2 meters"),
             make_parsed("2 meters", Length::new::<meter>(2.))
         );
+        assert_eq!(
+            make_length("-1"),
+            make_parsed("-1", Length::new::<kilometer>(-1.))
+        )
     }
     #[test]
     fn parse_length_with_invalid_input() {
@@ -215,9 +231,7 @@ mod tests {
         attempt_length_parse("ten m"); // Invalid number format
         attempt_length_parse("10 xyz"); // Unrecognized unit
         attempt_length_parse(""); // Empty string
-        //attempt_length_parse("10 10 m"); // Invalid format
+                                  //attempt_length_parse("10 10 m"); // Invalid format
         attempt_length_parse("reference m"); // Missing number
-                                            
     }
-
 }

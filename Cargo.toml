@@ -10,4 +10,13 @@ serde = { version = "1.0", features = ["derive"] }
 regex = "1.11.1"
 lazy_static = "1.5.0"
 serde_yaml = "0.9.34"
+clap = { version = "4.5.21", features = ["derive"] }
+thiserror = "2.0.3"
+serde_json = "1.0.133"
 
+[[bin]]
+name = "test_parser"
+test = false
+
+[doc]
+test = false
