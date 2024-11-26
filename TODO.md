@@ -17,7 +17,7 @@ Thingys related to parsing. New types for example.
 
 Thingys related to making the user comfy. Better error messages for example.
     
-    - [ ] Helpful error message on invalid keyword
+- [ ] Helpful error message on invalid keyword
 
 
 # DONE
