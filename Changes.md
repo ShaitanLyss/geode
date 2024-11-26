@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Range type for parsing start .. end values
 - Cuboid type
+- Support for all possible ways to express units (m^2, m², m2...)
 
 ### Changed
 

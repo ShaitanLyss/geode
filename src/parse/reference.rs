@@ -30,7 +30,7 @@ lazy_static! {
 pub enum ParseReferenceError<E: std::error::Error> {
     #[error("invalid format, it should be [REF|REFERENCE] value")]
     InvalidFormat,
-    #[error("invalid value")]
+    #[error("invalid value: {0}")]
     InvalidValue(#[from] E),
 }
 

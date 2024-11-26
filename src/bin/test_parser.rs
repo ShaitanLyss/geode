@@ -1,5 +1,6 @@
 #![allow(unused)]
 use geode::{parse::{quantity::{self, Mass, Pressure}, range::Range, WithReference}, shape::Cuboid};
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -19,5 +20,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     dbg!("5 000 000".parse::<Pressure>()?);
 
     dbg!("z".parse::<WithReference<char>>());
+    dbg!("m.k*s".split(".").collect_vec());
     Ok(())
 }

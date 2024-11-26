@@ -1,4 +1,5 @@
 #![allow(unused)]
+use super::unit::{format_unit, FormatUnitError};
 use super::RawRepr;
 use crate::StdError;
 use lazy_static::lazy_static;
@@ -7,6 +8,7 @@ use serde::{de::Error, Deserialize, Serialize};
 use std::fmt::{Debug, Display};
 use std::str::FromStr;
 use thiserror::Error;
+use uom::str::ParseQuantityError as UomParseError;
 
 #[derive(Debug, PartialEq, PartialOrd, Clone)]
 pub struct ParsedValue<L> {
@@ -27,21 +29,22 @@ impl<L> RawRepr for ParsedValue<L> {
 }
 
 #[derive(Debug, Error)]
-pub enum ParseQuantityError<E: StdError> {
+pub enum ParseQuantityError {
     #[error("invalid quantity format : '{0}', should be 'value [unit]'")]
     InvalidFormat(String),
-    #[error("quantity not recognized: '{0}'")]
-    Unrecognized(#[from] E),
     #[error("this quantity can't be a reference, please remove the 'ref' or 'reference' keyword")]
     NoReference,
+    #[error("invalid unit format: {0}")]
+    InvalidUnitFormat(#[from] FormatUnitError),
+    #[error("quantity not recognized: '{0}'")]
+    Unrecognized(#[from] UomParseError),
 }
 
 impl<T> FromStr for ParsedValue<T>
 where
-    T: FromStr + DefaultUnit + Debug,
-    T::Err: StdError,
+    T: FromStr<Err = UomParseError> + DefaultUnit + Debug,
 {
-    type Err = ParseQuantityError<T::Err>;
+    type Err = ParseQuantityError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(ParsedValue::new(s)?)
@@ -60,8 +63,7 @@ impl<T> Serialize for ParsedValue<T> {
 
 impl<'de, T> Deserialize<'de> for ParsedValue<T>
 where
-    T: FromStr + Debug + DefaultUnit,
-    T::Err: StdError,
+    T: FromStr<Err = UomParseError> + Debug + DefaultUnit,
 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -74,34 +76,56 @@ where
 }
 
 lazy_static! {
-    static ref HAS_UNIT_RE: Regex =
-        Regex::new(r"(?i)^\s*(reference|ref)?\s*([+-]?[\d. _]+(?:e(?:\+|-)?[\d]+)?)[ \t]*([-°a-zA-Z][-+/\w²]*)?$").unwrap();
+    static ref HAS_UNIT_RE: Regex = Regex::new(
+        r"(?i)^\s*(reference|ref)?\s*([+-]?[\d. _]+?(?:e(?:\+|-)?[.\d]+)?[.\d]*)[ \t]*([^\d\s]\S*)?$"
+    )
+    .unwrap();
+}
+
+pub fn get_unit(quantity: &str) -> Option<&str> {
+    Some(HAS_UNIT_RE.captures(quantity)?.get(3)?.as_str())
 }
 
 impl<T> ParsedValue<T>
 where
-    T: FromStr + Debug + DefaultUnit,
-    T::Err: Debug + StdError,
+    T: FromStr<Err = UomParseError> + Debug + DefaultUnit,
 {
     // Constructor to create a new ParsedValue
-    pub fn new(raw: &str) -> Result<Self, ParseQuantityError<T::Err>> {
+    pub fn new(raw: &str) -> Result<Self, ParseQuantityError> {
         if let Some(captures) = HAS_UNIT_RE.captures(raw) {
             if captures.get(1).is_some() {
                 return Err(ParseQuantityError::NoReference);
             }
-            let prepped_raw = format!(
-                "{} {}",
-                captures[2].to_string().replace(" ", "").replace("_", ""),
-                if let Some(unit) = captures.get(3) {
-                    unit.as_str()
-                } else {
-                    T::DEFAULT_UNIT
+            let mut unit: String = T::DEFAULT_UNIT.to_string();
+            if let Some(u) = captures.get(3) {
+                unit = format_unit(u.as_str())?;
+            }
+
+            let value = &captures[2];
+            let mut pretty_value = String::with_capacity(value.len());
+            let mut prepped_value = String::with_capacity(value.len());
+
+            for c in value.chars() {
+                match c {
+                    ' ' => pretty_value.push(' '),
+                    '_' => pretty_value.push(' '),
+                    _ => {
+                        pretty_value.push(c);
+                        prepped_value.push(c);
+                    }
                 }
-            );
+            }
+
+            let prepped_raw = format!("{} {}", prepped_value, &unit);
 
             Ok(ParsedValue {
-                raw: raw.to_string(),
-                parsed: prepped_raw.parse()?,
+                parsed: dbg!(prepped_raw).parse()?,
+                raw: format!(
+                    "{}{}{}",
+                    pretty_value,
+                    if unit.len() > 0 { " " } else { "" },
+                    &unit
+                ),
             })
         } else {
             Err(ParseQuantityError::InvalidFormat(raw.to_string()))
@@ -125,7 +149,6 @@ pub trait DefaultUnit {
     const DEFAULT_UNIT: &str;
 }
 
-
 /// Ratio (unit less value resulting from calculating the ratio of two quantities)
 pub type Ratio = ParsedValue<si::Ratio>;
 
@@ -133,19 +156,32 @@ impl DefaultUnit for si::Ratio {
     const DEFAULT_UNIT: &str = "";
 }
 
-/// Length (default: kilometers, since distances in geoscience are often measured in km)
-pub type Length = ParsedValue<si::Length>;
+/// Area (default: km²)
+pub type Area = ParsedValue<si::Area>;
 
-impl DefaultUnit for si::Length {
-    const DEFAULT_UNIT: &str = "km";
+impl DefaultUnit for si::Area {
+    const DEFAULT_UNIT: &str = "km²";
 }
 
+/// Compressibility (default: Pa⁻¹)
+pub type Compressibility = ParsedValue<si::Compressibility>;
+
+impl DefaultUnit for si::Compressibility {
+    const DEFAULT_UNIT: &str = "Pa⁻¹";
+}
 
 /// HydraulicPermeability (default: darcy)
 pub type HydraulicPermeability = ParsedValue<si::HydraulicPermeability>;
 
 impl DefaultUnit for si::HydraulicPermeability {
     const DEFAULT_UNIT: &str = "mD";
+}
+
+/// Length (default: kilometers, since distances in geoscience are often measured in km)
+pub type Length = ParsedValue<si::Length>;
+
+impl DefaultUnit for si::Length {
+    const DEFAULT_UNIT: &str = "km";
 }
 
 /// Mass (default: grams, since small mass quantities in geoscience, especially in analysis, use grams)
@@ -218,15 +254,15 @@ mod tests {
         );
         assert_eq!(
             make_length("10m"),
-            make_parsed("10m", Length::new::<meter>(10.))
+            make_parsed("10 m", Length::new::<meter>(10.))
         );
         assert_eq!(
             make_length("10     m"),
-            make_parsed("10     m", Length::new::<meter>(10.))
+            make_parsed("10 m", Length::new::<meter>(10.))
         );
         assert_eq!(
             make_length("10"),
-            make_parsed("10", Length::new::<kilometer>(10.))
+            make_parsed("10 km", Length::new::<kilometer>(10.))
         );
         assert_eq!(
             make_length("100 000 m"),
@@ -242,8 +278,17 @@ mod tests {
         );
         assert_eq!(
             make_length("-1"),
-            make_parsed("-1", Length::new::<kilometer>(-1.))
-        )
+            make_parsed("-1 km", Length::new::<kilometer>(-1.))
+        );
+        assert_eq!(
+            super::Compressibility::new("1e-09 Pa-1").expect("Valid quantity should be parsed."),
+            ParsedValue {
+                parsed: uom::si::f64::Compressibility::new::<uom::si::compressibility::pascal>(
+                    1e-09
+                ),
+                raw: "1e-09 Pa⁻¹".to_string()
+            }
+        );
     }
     #[test]
     fn parse_length_with_invalid_input() {

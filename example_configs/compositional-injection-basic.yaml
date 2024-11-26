@@ -48,7 +48,7 @@ domain:
 
 materials:
   rock:
-    compressibility: 1e-09
+    compressibility: 1e-09 Pa^-1
     porosity: reference 0.3
     pressure: reference 5 000 000
     permeability:

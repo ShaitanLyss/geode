@@ -24,7 +24,8 @@ impl<T> Serialize for Range<T> {
 
 impl<'de, T> Deserialize<'de> for Range<T>
 where
-    T: FromStr, T::Err: std::error::Error+ 'static
+    T: FromStr,
+    T::Err: std::error::Error + 'static,
 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -46,7 +47,10 @@ impl<T> RawRepr for Range<T> {
 
 use std::fmt::{Debug, Display};
 #[derive(Debug, Error, PartialEq)]
-pub enum ParseRangeError<T: FromStr> where T::Err: std::error::Error + 'static  {
+pub enum ParseRangeError<T: FromStr>
+where
+    T::Err: std::error::Error + 'static,
+{
     #[error("Wrong number of elements for a range, it should be 2. Example: 0 .. 1")]
     WrongArgNumber,
     #[error("Failed to parse start bound: {0}")]
@@ -55,9 +59,12 @@ pub enum ParseRangeError<T: FromStr> where T::Err: std::error::Error + 'static  
     InvalidEnd(#[source] T::Err),
 }
 
+use super::quantity;
+
 impl<T> FromStr for Range<T>
 where
-    T: FromStr, T::Err: std::error::Error + 'static
+    T: FromStr,
+    T::Err: std::error::Error + 'static,
 {
     type Err = ParseRangeError<T>;
 
@@ -68,10 +75,21 @@ where
             return Err(ParseRangeError::WrongArgNumber);
         }
 
-        let start: T = parts[0]
+        let start_unit = quantity::get_unit(parts[0]);
+        let end_unit = quantity::get_unit(parts[1]);
+
+        let mut start = parts[0].to_string();
+        let mut end = parts[1].to_string();
+        if start_unit.is_some() && end_unit.is_none() {
+            end += start_unit.expect("already checked")
+        } else if start_unit.is_none() && end_unit.is_some() {
+            start += end_unit.expect("already checked")
+        }
+
+        let start: T = start
             .parse()
             .map_err(|e| ParseRangeError::InvalidStart(e))?;
-        let end: T = parts[1].parse().map_err(|e| ParseRangeError::InvalidEnd(e))?;
+        let end: T = end.parse().map_err(|e| ParseRangeError::InvalidEnd(e))?;
 
         Ok(Range {
             start,
@@ -85,7 +103,38 @@ where
 mod tests {
     use std::num::ParseIntError;
 
+
     use super::*;
+    
+    use super::quantity::*;
+
+    #[test]
+    fn same_unit_when_only_one() {
+        let raw = "0..1m2";
+        let range: Range<Area> = raw.parse().expect("valid range should be parsed");
+        assert_eq!(
+            range,
+            Range {
+            start: Area::new("0 m²").unwrap(),
+            end: Area::new("1 m^2").unwrap(),
+            raw: raw.to_string()
+            }
+        );
+    }
+
+    #[test]
+    fn different_units() {
+        let raw = "10km^+2..1m2";
+        let range: Range<Area> = raw.parse().expect("valid range should be parsed");
+        assert_eq!(
+            range,
+            Range {
+            start: Area::new("10 km²").unwrap(),
+            end: Area::new("1 m^2").unwrap(),
+            raw: raw.to_string()
+            }
+        );
+    }
 
     #[test]
     fn parse_valid_range() {
@@ -136,13 +185,19 @@ mod tests {
     fn parse_invalid_range_invalid_start() {
         let raw = "a .. 1";
         let result: Result<Range<i32>, _> = raw.parse();
-        assert_eq!(result.unwrap_err(), ParseRangeError::InvalidStart("a".parse::<i32>().unwrap_err()));
+        assert_eq!(
+            result.unwrap_err(),
+            ParseRangeError::InvalidStart("a".parse::<i32>().unwrap_err())
+        );
     }
 
     #[test]
     fn parse_invalid_range_invalid_end() {
         let raw = "0 .. b";
         let result: Result<Range<i32>, _> = raw.parse();
-        assert_eq!(result.unwrap_err(), ParseRangeError::InvalidEnd("b".parse::<i32>().unwrap_err()));
+        assert_eq!(
+            result.unwrap_err(),
+            ParseRangeError::InvalidEnd("b".parse::<i32>().unwrap_err())
+        );
     }
 }

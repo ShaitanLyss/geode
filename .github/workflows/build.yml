@@ -53,7 +53,7 @@ jobs:
         with:
           command: both  # test & build
           target: ${{ matrix.platform.target }}
-          toolchain: nightly 
+          toolchain: beta 
           args: "--locked --release"
           strip: true
       - name: Publish artifacts and release
