@@ -11,18 +11,18 @@ use thiserror::Error;
 use uom::str::ParseQuantityError as UomParseError;
 
 #[derive(Debug, PartialEq, PartialOrd, Clone)]
-pub struct ParsedValue<L> {
+pub struct Quantity<L> {
     raw: String,
     parsed: L,
 }
 
-impl<T> Display for ParsedValue<T> {
+impl<T> Display for Quantity<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.raw)
     }
 }
 
-impl<L> RawRepr for ParsedValue<L> {
+impl<L> RawRepr for Quantity<L> {
     fn raw(&self) -> &str {
         &self.raw
     }
@@ -40,18 +40,18 @@ pub enum ParseQuantityError {
     Unrecognized(#[from] UomParseError),
 }
 
-impl<T> FromStr for ParsedValue<T>
+impl<T> FromStr for Quantity<T>
 where
     T: FromStr<Err = UomParseError> + DefaultUnit + Debug,
 {
     type Err = ParseQuantityError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(ParsedValue::new(s)?)
+        Ok(Quantity::new(s)?)
     }
 }
 
-impl<T> Serialize for ParsedValue<T> {
+impl<T> Serialize for Quantity<T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -61,7 +61,7 @@ impl<T> Serialize for ParsedValue<T> {
     }
 }
 
-impl<'de, T> Deserialize<'de> for ParsedValue<T>
+impl<'de, T> Deserialize<'de> for Quantity<T>
 where
     T: FromStr<Err = UomParseError> + Debug + DefaultUnit,
 {
@@ -71,7 +71,7 @@ where
     {
         // First, deserialize the `raw` field as a string
         let raw: &str = Deserialize::deserialize(deserializer)?;
-        Ok(ParsedValue::new(raw).map_err(|e| D::Error::custom(e))?)
+        Ok(Quantity::new(raw).map_err(|e| D::Error::custom(e))?)
     }
 }
 
@@ -86,7 +86,7 @@ pub fn get_unit(quantity: &str) -> Option<&str> {
     Some(HAS_UNIT_RE.captures(quantity)?.get(3)?.as_str())
 }
 
-impl<T> ParsedValue<T>
+impl<T> Quantity<T>
 where
     T: FromStr<Err = UomParseError> + Debug + DefaultUnit,
 {
@@ -118,8 +118,8 @@ where
 
             let prepped_raw = format!("{} {}", prepped_value, &unit);
 
-            Ok(ParsedValue {
-                parsed: dbg!(prepped_raw).parse()?,
+            Ok(Quantity {
+                parsed: prepped_raw.parse()?,
                 raw: format!(
                     "{}{}{}",
                     pretty_value,
@@ -150,76 +150,76 @@ pub trait DefaultUnit {
 }
 
 /// Ratio (unit less value resulting from calculating the ratio of two quantities)
-pub type Ratio = ParsedValue<si::Ratio>;
+pub type Ratio = Quantity<si::Ratio>;
 
 impl DefaultUnit for si::Ratio {
     const DEFAULT_UNIT: &str = "";
 }
 
 /// Area (default: km²)
-pub type Area = ParsedValue<si::Area>;
+pub type Area = Quantity<si::Area>;
 
 impl DefaultUnit for si::Area {
     const DEFAULT_UNIT: &str = "km²";
 }
 
 /// Compressibility (default: Pa⁻¹)
-pub type Compressibility = ParsedValue<si::Compressibility>;
+pub type Compressibility = Quantity<si::Compressibility>;
 
 impl DefaultUnit for si::Compressibility {
     const DEFAULT_UNIT: &str = "Pa⁻¹";
 }
 
 /// HydraulicPermeability (default: darcy)
-pub type HydraulicPermeability = ParsedValue<si::HydraulicPermeability>;
+pub type HydraulicPermeability = Quantity<si::HydraulicPermeability>;
 
 impl DefaultUnit for si::HydraulicPermeability {
     const DEFAULT_UNIT: &str = "mD";
 }
 
 /// Length (default: kilometers, since distances in geoscience are often measured in km)
-pub type Length = ParsedValue<si::Length>;
+pub type Length = Quantity<si::Length>;
 
 impl DefaultUnit for si::Length {
     const DEFAULT_UNIT: &str = "km";
 }
 
 /// Mass (default: grams, since small mass quantities in geoscience, especially in analysis, use grams)
-pub type Mass = ParsedValue<si::Mass>;
+pub type Mass = Quantity<si::Mass>;
 
 impl DefaultUnit for si::Mass {
     const DEFAULT_UNIT: &str = "g";
 }
 
 /// Time (default: years, due to the typical timescales in geoscience, especially for geological processes)
-pub type Time = ParsedValue<si::Time>;
+pub type Time = Quantity<si::Time>;
 impl DefaultUnit for si::Time {
     const DEFAULT_UNIT: &'static str = "yr"; // Years are commonly used in geoscience
 }
 
 /// Temperature (default: Celsius, as temperature is often measured in Celsius in geoscience contexts)
-pub type Temperature = ParsedValue<si::ThermodynamicTemperature>;
+pub type Temperature = Quantity<si::ThermodynamicTemperature>;
 
 impl DefaultUnit for si::ThermodynamicTemperature {
     const DEFAULT_UNIT: &'static str = "°C";
 }
 
 /// Pressure (default: pascal, as pressure is often measured in pascal in scientific contexts)
-pub type Pressure = ParsedValue<si::Pressure>;
+pub type Pressure = Quantity<si::Pressure>;
 
 impl DefaultUnit for si::Pressure {
     const DEFAULT_UNIT: &'static str = "Pa";
 }
 
 /// Volume (default: cubic meters, which is the SI unit for volume)
-pub type Volume = ParsedValue<si::Volume>;
+pub type Volume = Quantity<si::Volume>;
 
 impl DefaultUnit for si::Volume {
     const DEFAULT_UNIT: &'static str = "m³";
 }
 
 /// Molar Mass (default: grams per mole, as it's commonly used in geoscience)
-pub type MolarMass = ParsedValue<si::MolarMass>;
+pub type MolarMass = Quantity<si::MolarMass>;
 
 impl DefaultUnit for si::MolarMass {
     const DEFAULT_UNIT: &'static str = "g/mol";
@@ -229,15 +229,15 @@ impl DefaultUnit for si::MolarMass {
 mod tests {
     use std::str::FromStr;
 
-    use super::{DefaultUnit, ParsedValue, Pressure};
+    use super::{DefaultUnit, Quantity, Pressure};
     use std::fmt::Debug;
     use uom::si::{f64::Length, length::*};
 
-    fn make_parsed<L>(raw: &str, parsed: L) -> ParsedValue<L>
+    fn make_parsed<L>(raw: &str, parsed: L) -> Quantity<L>
     where
         L: FromStr + Debug + DefaultUnit,
     {
-        ParsedValue {
+        Quantity {
             raw: raw.to_string(),
             parsed,
         }
@@ -282,7 +282,7 @@ mod tests {
         );
         assert_eq!(
             super::Compressibility::new("1e-09 Pa-1").expect("Valid quantity should be parsed."),
-            ParsedValue {
+            Quantity {
                 parsed: uom::si::f64::Compressibility::new::<uom::si::compressibility::pascal>(
                     1e-09
                 ),

@@ -375,7 +375,7 @@ checksum = "673aac59facbab8a9007c7f6108d11f63b603f7cabff99fabf650fea5c32b861"
 [[package]]
 name = "uom"
 version = "0.37.0"
-source = "git+https://github.com/ShaitanLyss/uom.git#3ae3e50f69453db84a0e4f741eff5a48025bf12c"
+source = "git+https://github.com/ShaitanLyss/uom.git#863f29d44297126c785a7ad9f62651563bf68a7e"
 dependencies = [
  "num-traits",
  "typenum",

@@ -10,9 +10,9 @@ use super::RawRepr;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct WithReference<T> {
-    raw: String,
     reference: bool,
     value: T,
+    raw: String,
 }
 
 impl<T> RawRepr for WithReference<T> {

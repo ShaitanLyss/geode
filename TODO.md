@@ -13,4 +13,13 @@ Thingys to implement.
 
 Thingys related to parsing. New types for example.
 
-- [ ] Compressibility
+## UX
+
+Thingys related to making the user comfy. Better error messages for example.
+    
+    - [ ] Helpful error message on invalid keyword
+
+
+# DONE
+
+- [x] Compressibility
