@@ -60,4 +60,5 @@ jobs:
         uses: houseabsolute/actions-rust-release@v0
         with:
           executable-name: geode
+          extra-files: "./example_configs\n./frameworks"
           target: ${{ matrix.platform.target }}

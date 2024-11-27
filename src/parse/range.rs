@@ -1,10 +1,12 @@
 #![allow(unused)]
 use std::str::FromStr;
+use schemars::{schema::{InstanceType, Schema, SchemaObject, SingleOrVec, StringValidation, SubschemaValidation}, JsonSchema};
+
 use thiserror::Error;
 
 use serde::{de::Error, Deserialize, Serialize};
 
-use super::RawRepr;
+use super::{RawRepr, RANGE_PATTERN};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Range<T> {
@@ -19,6 +21,39 @@ impl<T> Serialize for Range<T> {
         S: serde::Serializer,
     {
         serializer.serialize_str(&self.raw)
+    }
+}
+impl<T> JsonSchema for Range<T> {
+    fn schema_name() -> String {
+        String::from("Range")
+    }
+
+    fn json_schema(gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+        let mut schema = SchemaObject::default();
+        //schema.instance_type = Some(SingleOrVec::Single(Box::new(InstanceType::String)));
+        schema.subschemas = Some(Box::new(SubschemaValidation {
+            one_of: Some(vec![
+                // Schema for string type
+                Schema::Object(SchemaObject {
+                    instance_type: Some(SingleOrVec::Single(Box::new(InstanceType::String))),
+                    string: Some(Box::new(StringValidation {
+                        pattern: Some(RANGE_PATTERN.to_string()),
+                        ..Default::default()
+
+                    })),
+                    ..Default::default()
+                }),
+                // Schema for number type
+                Schema::Object(SchemaObject {
+                    instance_type: Some(SingleOrVec::Single(Box::new(InstanceType::Number))),
+                    ..Default::default()
+                }),
+            ]),
+            ..Default::default()
+        }));
+        
+        Schema::Object(schema)
+        
     }
 }
 

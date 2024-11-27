@@ -6,44 +6,51 @@
 
 pub mod domain;
 pub mod material;
+pub use material::Material;
+use schemars::JsonSchema;
 
 use std::{collections::HashMap, str::FromStr};
 
 use self::domain::Domain;
 use compositional::CompositionalPhysics;
-use material::Material;
 use serde::{Deserialize, Serialize};
 
 mod compositional {
     use crate::parse::quantity::*;
     use std::collections::HashMap;
 
+    use schemars::JsonSchema;
     use serde::{Deserialize, Serialize};
 
     /// Represents a component in a compositional physics model, such as a
     /// molecule or chemical species.
-    #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
+    #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize, JsonSchema)]
     pub struct Component {
         pub mass: MolarMass,
     }
 
-    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+    /// # Compositional Physics
+    ///
+    /// Describe compositional physics YEAH
+    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
     pub struct CompositionalPhysics {
         pub components: HashMap<String, Component>,
         pub phases: Vec<String>,
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+/// Hello Lyss, you're such a bg.
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub struct Physics {
     compositional: CompositionalPhysics,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub struct GeoscienceModel {
     pub physics: Physics,
     pub domain: Domain,
-    pub materials: HashMap<String, Material>,
+    #[serde(default)]
+    pub materials: HashMap<String, Option<Material>>,
 }
 
 impl FromStr for GeoscienceModel {

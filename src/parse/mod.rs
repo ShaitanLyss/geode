@@ -4,6 +4,7 @@ pub mod reference;
 pub mod unit;
 
 pub use reference::*;
+pub use quantity::{QUANTITY_PATTERN, NO_REF_QUANTITY_PATTERN, RANGE_PATTERN, QUANTITY_RE};
 
 
 pub trait RawRepr {

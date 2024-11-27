@@ -2,8 +2,13 @@
 use super::unit::{format_unit, FormatUnitError};
 use super::RawRepr;
 use crate::StdError;
+use const_format::{concatcp, formatcp};
 use lazy_static::lazy_static;
 use regex::Regex;
+use schemars::schema::{
+    InstanceType, Schema, SchemaObject, SingleOrVec, StringValidation, SubschemaValidation,
+};
+use schemars::JsonSchema;
 use serde::{de::Error, Deserialize, Serialize};
 use std::fmt::{Debug, Display};
 use std::str::FromStr;
@@ -14,6 +19,38 @@ use uom::str::ParseQuantityError as UomParseError;
 pub struct Quantity<L> {
     raw: String,
     parsed: L,
+}
+
+impl<T> JsonSchema for Quantity<T> {
+    fn schema_name() -> String {
+        String::from("Quantity")
+    }
+
+    fn json_schema(gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+        let mut schema = SchemaObject::default();
+        //schema.instance_type = Some(SingleOrVec::Single(Box::new(InstanceType::String)));
+        schema.subschemas = Some(Box::new(SubschemaValidation {
+            one_of: Some(vec![
+                // Schema for string type
+                Schema::Object(SchemaObject {
+                    instance_type: Some(SingleOrVec::Single(Box::new(InstanceType::String))),
+                    string: Some(Box::new(StringValidation {
+                        pattern: Some(NO_REF_QUANTITY_PATTERN.to_string()),
+                        ..Default::default()
+                    })),
+                    ..Default::default()
+                }),
+                // Schema for number type
+                Schema::Object(SchemaObject {
+                    instance_type: Some(SingleOrVec::Single(Box::new(InstanceType::Number))),
+                    ..Default::default()
+                }),
+            ]),
+            ..Default::default()
+        }));
+
+        Schema::Object(schema)
+    }
 }
 
 impl<T> Display for Quantity<T> {
@@ -75,15 +112,23 @@ where
     }
 }
 
+const PARTIAL_QUANTITY_PATTERN: &str =
+    r"\s*([+-]?[\d_ ]*?\.?[\d_ ]+?(?:e(?:\+|-)?[.\d]+)?)[ \t]*([^\d\s.](?:.*?[^.])?)?\s*";
+
+pub const NO_REF_QUANTITY_PATTERN: &str = formatcp!("^{PARTIAL_QUANTITY_PATTERN}$");
+
+const PARTIAL_REFERENCE_PATTERN: &str = concatcp!(r"\s*(reference|ref)?", PARTIAL_QUANTITY_PATTERN);
+pub const QUANTITY_PATTERN: &str = formatcp!("^{PARTIAL_REFERENCE_PATTERN}$");
+
+pub const RANGE_PATTERN: &str =
+    formatcp!(r"^{PARTIAL_QUANTITY_PATTERN}\s*..\s*{PARTIAL_QUANTITY_PATTERN}$");
+
 lazy_static! {
-    static ref HAS_UNIT_RE: Regex = Regex::new(
-        r"(?i)^\s*(reference|ref)?\s*([+-]?[\d. _]+?(?:e(?:\+|-)?[.\d]+)?[.\d]*)[ \t]*([^\d\s]\S*)?$"
-    )
-    .unwrap();
+    pub static ref QUANTITY_RE: Regex = Regex::new(QUANTITY_PATTERN).unwrap();
 }
 
 pub fn get_unit(quantity: &str) -> Option<&str> {
-    Some(HAS_UNIT_RE.captures(quantity)?.get(3)?.as_str())
+    Some(QUANTITY_RE.captures(quantity)?.get(3)?.as_str())
 }
 
 impl<T> Quantity<T>
@@ -92,7 +137,8 @@ where
 {
     // Constructor to create a new ParsedValue
     pub fn new(raw: &str) -> Result<Self, ParseQuantityError> {
-        if let Some(captures) = HAS_UNIT_RE.captures(raw) {
+        dbg!(QUANTITY_RE.to_string());
+        if let Some(captures) = QUANTITY_RE.captures(raw) {
             if captures.get(1).is_some() {
                 return Err(ParseQuantityError::NoReference);
             }
@@ -119,7 +165,7 @@ where
             let prepped_raw = format!("{} {}", prepped_value, &unit);
 
             Ok(Quantity {
-                parsed: prepped_raw.parse()?,
+                parsed: dbg!(prepped_raw).parse()?,
                 raw: format!(
                     "{}{}{}",
                     pretty_value,
@@ -229,7 +275,7 @@ impl DefaultUnit for si::MolarMass {
 mod tests {
     use std::str::FromStr;
 
-    use super::{DefaultUnit, Quantity, Pressure};
+    use super::{DefaultUnit, Pressure, Quantity};
     use std::fmt::Debug;
     use uom::si::{f64::Length, length::*};
 

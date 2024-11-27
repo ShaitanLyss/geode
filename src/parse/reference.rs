@@ -1,5 +1,7 @@
 use lazy_static::lazy_static;
+use schemars::{schema::{InstanceType, Schema, SchemaObject, SingleOrVec, StringValidation, SubschemaValidation}, JsonSchema};
 use std::{fmt::Display, str::FromStr};
+use crate::parse::{QUANTITY_RE, QUANTITY_PATTERN};
 
 use regex::Regex;
 use serde::{de::Error, Deserialize, Serialize};
@@ -15,16 +17,50 @@ pub struct WithReference<T> {
     raw: String,
 }
 
+impl<T> JsonSchema for WithReference<T> {
+    fn schema_name() -> String {
+        String::from("ReferenceQuantity")
+    }
+
+    fn json_schema(gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+        let mut schema = SchemaObject::default();
+        //schema.instance_type = Some(SingleOrVec::Single(Box::new(InstanceType::String)));
+        schema.subschemas = Some(Box::new(SubschemaValidation {
+            one_of: Some(vec![
+                // Schema for string type
+                Schema::Object(SchemaObject {
+                    instance_type: Some(SingleOrVec::Single(Box::new(InstanceType::String))),
+                    string: Some(Box::new(StringValidation {
+                        pattern: Some(QUANTITY_PATTERN.to_string()),
+                        ..Default::default()
+
+                    })),
+                    ..Default::default()
+                }),
+                // Schema for number type
+                Schema::Object(SchemaObject {
+                    instance_type: Some(SingleOrVec::Single(Box::new(InstanceType::Number))),
+                    ..Default::default()
+                }),
+            ]),
+            ..Default::default()
+        }));
+
+        Schema::Object(schema)
+    }
+}
 impl<T> RawRepr for WithReference<T> {
     fn raw(&self) -> &str {
         &self.raw
     }
 }
 
-lazy_static! {
-    static ref REFERENCE_RE: Regex = Regex::new(r"^\s*(?:(reference|ref)\s)?\s*([^\s].*?)\s*$")
-        .expect("Builtin regex should be valid");
-}
+//const REFERENCE_PATTERN: &str = r"^\s*(?:(reference|ref)\s)?\s*([^\s].*?)\s*$"; 
+
+//lazy_static! {
+//    static ref REFERENCE_RE: Regex = Regex::new(formatcp!(r"^{QUANTITY_RE}"))
+//        .expect("Builtin regex should be valid");
+//}
 
 #[derive(Debug, Error)]
 pub enum ParseReferenceError<E: std::error::Error> {
@@ -41,7 +77,7 @@ where
     type Err = ParseReferenceError<T::Err>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if let Some(captures) = REFERENCE_RE.captures(s) {
+        if let Some(captures) = QUANTITY_RE.captures(s) {
             let reference = captures.get(1).is_some();
             let value = &captures[2];
             Ok(WithReference {
@@ -105,7 +141,7 @@ mod tests {
 
     impl ToString for TestValue {
         fn to_string(&self) -> String {
-            return self.0.to_string()
+            return self.0.to_string();
         }
     }
 

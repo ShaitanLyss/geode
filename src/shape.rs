@@ -1,16 +1,17 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::parse::{quantity::Length, range::Range};
 use crate::math::Vec3;
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub struct Cuboid {
     x: Range<Length>,
     y: Range<Length>,
     z: Range<Length>
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub struct Sphere {
     center: Vec3, 
     radius: Length 
