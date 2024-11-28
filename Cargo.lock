@@ -181,9 +181,14 @@ dependencies = [
 
 [[package]]
 name = "geoffrey"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e98425222b0f5ad4b0a9e6d3b85f1e22ed35850062d985498b8dfd97e47d9f3e"
+checksum = "dac53f2ecd213908a5d650497b860af87b82c2ad04efd57110c43c3c882f0321"
+dependencies = [
+ "serde",
+ "serde_yaml",
+ "strict-yaml-rust",
+]
 
 [[package]]
 name = "hashbrown"
