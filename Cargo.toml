@@ -5,7 +5,7 @@ name = "geode-for-geoscience"
 description ="The Geode CLI for geoscience simulation."
 license-file = "./LICENSE"
 repository = "https://github.com/ShaitanLyss/geode"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 
 [dependencies]
@@ -21,10 +21,6 @@ serde_json = "1.0.133"
 itertools = "0.13.0"
 schemars = { version="0.8.21", features = ["preserve_order"]}
 const_format = "0.2.33"
-
-[[bin]]
-name = "test_parser"
-test = false
 
 
 [[bin]]
