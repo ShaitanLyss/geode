@@ -32,19 +32,19 @@ where
 
 fn main() {
     // Request the output directory
-    let out = env::var("PROFILE").unwrap();
-    for dir in COPY_DIRS {
-        let out = PathBuf::from(format!("target/{}/{}", out, dir));
-
-        // If it is already in the output directory, delete it and start over
-        if out.exists() {
-            fs::remove_dir_all(&out).unwrap();
-        }
-
-        // Create the out directory
-        fs::create_dir(&out).unwrap();
-
-        // Copy the directory
-        copy_dir(dir, &out);
-    }
+    //let out = env::var("PROFILE").unwrap();
+    //for dir in COPY_DIRS {
+    //    let out = PathBuf::from(format!("target/{}/{}", out, dir));
+    //
+    //    // If it is already in the output directory, delete it and start over
+    //    if out.exists() {
+    //        fs::remove_dir_all(&out).unwrap();
+    //    }
+    //
+    //    // Create the out directory
+    //    fs::create_dir(&out).unwrap();
+    //
+    //    // Copy the directory
+    //    copy_dir(dir, &out);
+    //}
 }
