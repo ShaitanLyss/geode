@@ -1,0 +1,11 @@
+framework: GEOS
+
+generation:
+  - materials as m:
+      - m.porosity? && m.pressure?.isReference:
+          VaryingPressureSolid
+
+      - m.viscosity?: Fluid
+
+
+extraction:

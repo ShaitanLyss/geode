@@ -9,6 +9,7 @@ version = "0.2.3"
 edition = "2021"
 
 [dependencies]
+geoffrey = "0.1.0"
 strict-yaml-rust = "0.1.2"
 uom = { version = "0.37.0", features = ["f64", "si", "std"], default-features = false, package = "geo-uom"}
 serde = { version = "1.0", features = ["derive"] }

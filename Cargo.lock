@@ -167,6 +167,7 @@ dependencies = [
  "clap",
  "const_format",
  "geo-uom",
+ "geoffrey",
  "itertools",
  "lazy_static",
  "regex",
@@ -177,6 +178,12 @@ dependencies = [
  "strict-yaml-rust",
  "thiserror",
 ]
+
+[[package]]
+name = "geoffrey"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e98425222b0f5ad4b0a9e6d3b85f1e22ed35850062d985498b8dfd97e47d9f3e"
 
 [[package]]
 name = "hashbrown"
