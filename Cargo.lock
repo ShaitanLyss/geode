@@ -151,11 +151,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
 
 [[package]]
+name = "geo-uom"
+version = "0.37.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "44f1bc0116fa3d567b44c2d869d28478c2305a963f0fc25f7a6b02aefe9cd5c4"
+dependencies = [
+ "num-traits",
+ "typenum",
+]
+
+[[package]]
 name = "geode"
 version = "0.2.0"
 dependencies = [
  "clap",
  "const_format",
+ "geo-uom",
  "itertools",
  "lazy_static",
  "regex",
@@ -165,7 +176,6 @@ dependencies = [
  "serde_yaml",
  "strict-yaml-rust",
  "thiserror",
- "uom",
 ]
 
 [[package]]
@@ -458,15 +468,6 @@ name = "unsafe-libyaml"
 version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "673aac59facbab8a9007c7f6108d11f63b603f7cabff99fabf650fea5c32b861"
-
-[[package]]
-name = "uom"
-version = "0.37.0"
-source = "git+https://github.com/ShaitanLyss/uom.git#863f29d44297126c785a7ad9f62651563bf68a7e"
-dependencies = [
- "num-traits",
- "typenum",
-]
 
 [[package]]
 name = "utf8parse"
