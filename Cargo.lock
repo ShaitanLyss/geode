@@ -161,7 +161,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "geode"
+name = "geode-for-geoscience"
 version = "0.2.0"
 dependencies = [
  "clap",
