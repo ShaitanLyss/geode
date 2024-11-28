@@ -137,7 +137,7 @@ where
 {
     // Constructor to create a new ParsedValue
     pub fn new(raw: &str) -> Result<Self, ParseQuantityError> {
-        dbg!(QUANTITY_RE.to_string());
+        QUANTITY_RE.to_string();
         if let Some(captures) = QUANTITY_RE.captures(raw) {
             if captures.get(1).is_some() {
                 return Err(ParseQuantityError::NoReference);
@@ -165,7 +165,7 @@ where
             let prepped_raw = format!("{} {}", prepped_value, &unit);
 
             Ok(Quantity {
-                parsed: dbg!(prepped_raw).parse()?,
+                parsed: prepped_raw.parse()?,
                 raw: format!(
                     "{}{}{}",
                     pretty_value,
