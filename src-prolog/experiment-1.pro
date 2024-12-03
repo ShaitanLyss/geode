@@ -1,5 +1,4 @@
 :- use_module(library(clpfd)).
-:- use_module(library(assoc)).
 :- use_module(library(yaml)).
 % :- set_prolog_flag(double_quotes, chars).
 %  
@@ -27,6 +26,9 @@ solver(Framework, Solver) :-
     compositional_solver(Framework, Solver).
 
 geode_to_geos(A, B) :- A = B.
+
+moz(X) :- X = mozart{a:[], b:1}.
+get_b(X, A) :- A = get_assoc(b, X, A).
 
 avion(airbus).
 avion(boeing).
